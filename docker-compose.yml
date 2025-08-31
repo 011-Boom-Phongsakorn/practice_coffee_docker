@@ -1,0 +1,59 @@
+networks:
+  coffee_network:
+    name: coffee_network
+    driver: bridge
+
+services:
+  server:
+    container_name: server_service
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - "./server:/app"
+      - "/app/node_modules"
+    command: nodemon --legacy-watch server.js
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/coffee_db
+      - HOST=db
+      - USER=postgres
+      - PASSWORD=postgres
+      - DB=coffee_db
+      - DB_PORT=5432
+      - SERVER_PORT=5000
+    restart: always
+    depends_on:
+      - db
+  
+  client:
+    container_name: client_service
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - "./client:/app"
+      - "/app/node_modules"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    restart: always
+    depends_on:
+      - server
+    
+  db:
+    container_name: db_service
+    image: postgres:16
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=coffee_db
+    
+volumes:
+  pgdata:
